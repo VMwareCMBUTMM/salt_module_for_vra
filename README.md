@@ -48,6 +48,7 @@ Examples..
 
 ## Links to Documentation
 
+* [Salt Module for vRA](https://vmwarecmbutmm.github.io/salt_module_for_vra/)
 * [vRealize Automation](https://docs.vmware.com/en/vRealize-Automation/index.html) 
 * [SaltStack Config](https://docs.vmware.com/en/vRealize-Automation/8.1/SaltStackConfig_Help_v64.pdf) 
 
