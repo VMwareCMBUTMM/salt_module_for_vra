@@ -33,18 +33,14 @@ salt '*' sys.doc
 ## Running Commands from CLI Example 
 
 ```
-vra.tag_cloudzone myvra.company.local admin password "AWS-Cloud-Account / us-west-1" env aws
+salt 'salt-master' vra.tag_cloudzone myvra.company.local admin password "AWS-Cloud-Account / us-west-1" env aws
 ```
 
 (args = url, user, password, cloudzone/region, tag_key, tag_value)
 
 ### Running vRA Module Jobs from SaltStack Config
 
-FooFooFoo
-
-```
-Examples..
-```
+Video to come
 
 ## Links to Documentation
 
