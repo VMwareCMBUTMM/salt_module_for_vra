@@ -3000,6 +3000,3 @@ def delete_integration_by_name(url,username,password,int_name):
         print(response.status_code)
         return response.status_code
 
-#url = "vra8-dev-ga.cmbu.local"
-#username = "configuser"
-#password = "VMware1!"
