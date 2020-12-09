@@ -67,32 +67,4 @@ See also the list of [contributors](https://github.com/your/project/contributors
 
 ## Acknowledgments
 
-## Appendix
- vRealize Automation SaltStack module
 
- Cloud Accounts:
-  Create AWS Cloud Account:
-   - required: url,
-               access_key,
-               aws_key_id,
-               aws_access_key,
-               name
-
-  Create Azure Clou Account:
-   - required: url,
-               name,
-               access_key,
-               sub_id,
-               ten_id,
-               app_id,
-               app_key,
-               region_id
-
- Create vSphere Cloud Account:
-   - required: url,
-               access_key,
-               name,
-               vc_hostname,
-               vc_username,
-               vc_password,
-               region_id
