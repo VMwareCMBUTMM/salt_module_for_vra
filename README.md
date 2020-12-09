@@ -8,11 +8,8 @@ vRealize Automation needs to be installed and running and a version of SaltStack
 
 ### Prerequisites
 
-vRealize Automation 8?
-
-```
-Give examples
-```
+vRealize Automation 8
+vRA SaltStack Config
 
 ### Installing
 
@@ -27,7 +24,7 @@ saltutil.sync_modules
 In order to access docstrings: 
 
 ```
-salt '*' sys.doc
+salt '*' sys.doc 'vra*'
 ```
 
 ## Running Commands from CLI Example 
