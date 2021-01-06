@@ -60,9 +60,17 @@ def extract_values(obj, key):
     results = extract(obj, arr, key)
     return results
 
-def get_token(url,username, password):
+def get_token(url,username,password):
     """
     Retrieve Session Token from vRealize Automation
+
+    Arguments:
+
+    url = vRA FQDN
+
+    username = vRA admin user
+
+    password = vRA Admin password
     """
     api_url_base = set_bas_url(url)
     headers = {'Content-Type': 'application/json'}
@@ -82,7 +90,7 @@ def get_token(url,username, password):
 ##########Cloud Assembly Configuration Functions##########
 
 ######Cloud Account and Cloud Zones######
-def create_aws_ca(url,username,password,aws_key_id,aws_access_key,name):
+def create_aws_ca(url,username,password,aws_key_id,aws_access_key,name,region_name,create_zone="false"):
     """
     Setup and configure AWS Cloud Accounts
 
@@ -98,13 +106,18 @@ def create_aws_ca(url,username,password,aws_key_id,aws_access_key,name):
 
     aws_access_key = AWS Access Key
 
-    name = name of AWS Integration
+    name = Name of AWS Integration
+
+    region_name = Name of the region to assign (i.e us-west-1 or 'us-west-1,us-west-2' for multiple regions)
+
+    create_zone = Should vRA create a Cloud Zone for each region (default is true)
 
     """
     api_url_base = set_bas_url(url)
     access_key = get_token(url,username, password)
     headers = {'Content-Type': 'application/json','Authorization': 'Bearer {0}'.format(access_key)}
     api_url = '{0}iaas/api/cloud-accounts-aws'.format(api_url_base)
+    region_array = region_name.split(',')
     data =  {
                 "description": "AWS Cloud Account",
                 "accessKeyId": aws_key_id,
@@ -112,10 +125,8 @@ def create_aws_ca(url,username,password,aws_key_id,aws_access_key,name):
                 "cloudAccountProperties": {
 
                 },
-                "regionIds": [
-                    "us-west-1"
-                ],
-                "createDefaultZones" : "true",
+                "regionIds": region_array,
+                "createDefaultZones" : create_zone,
                 "name": name
             }
     response = requests.post(api_url, headers=headers, data=json.dumps(data), verify=False)
@@ -125,9 +136,10 @@ def create_aws_ca(url,username,password,aws_key_id,aws_access_key,name):
         return json_data
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
-def create_azure_ca(url,username,password,sub_id,ten_id,app_id,app_key,name,region_id):
+def create_azure_ca(url,username,password,sub_id,ten_id,app_id,app_key,name,region_name,create_zone="false"):
     """
     Setup and Create Azure Cloud Account
 
@@ -147,12 +159,15 @@ def create_azure_ca(url,username,password,sub_id,ten_id,app_id,app_key,name,regi
 
     app_key = Azure Client Application Secret Key
 
-    region_id = Azure Region (example: eastus)
+    region_name = Azure Region (example: eastus or 'eastus,westus' for multiple regions)
+
+    create_zone = Should vRA create a Cloud Zone for each region (default is true)
     """
     api_url_base = set_bas_url(url)
     access_key = get_token(url,username, password)
     headers = {'Content-Type': 'application/json','Authorization': 'Bearer {0}'.format(access_key)}
     api_url = '{0}iaas/api/cloud-accounts-azure'.format(api_url_base)
+    region_array = region_name.split(',')
     data =  {
               "name": name,
               "description": "Azure Cloud Account",
@@ -160,10 +175,8 @@ def create_azure_ca(url,username,password,sub_id,ten_id,app_id,app_key,name,regi
               "tenantId": ten_id,
               "clientApplicationId": app_id,
               "clientApplicationSecretKey": app_key,
-              "regionIds": [
-                  region_id
-               ],
-              "createDefaultZones": "true"
+              "regionIds": region_array,
+              "createDefaultZones": create_zone
             }
     response = requests.post(api_url, headers=headers, data=json.dumps(data), verify=False)
     if response.status_code == 201:
@@ -172,9 +185,10 @@ def create_azure_ca(url,username,password,sub_id,ten_id,app_id,app_key,name,regi
         return json_data
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
-def create_vsphere_ca(url,username,password,vc_hostname,vc_username,vc_password,name,region_id):
+def create_vsphere_ca(url,username,password,vc_hostname,vc_username,vc_password,name,region_name,create_zone="false"):
     """
     Setup and Create vSphere Cloud Account
 
@@ -194,12 +208,15 @@ def create_vsphere_ca(url,username,password,vc_hostname,vc_username,vc_password,
 
     name = Cloud Account Name
 
-    region_id = vCenter Datacenter (i.e. Datacenter:datacenter-2)
+    region_name = vCenter Datacenter (i.e. Datacenter:datacenter-2 or 'Datacenter:datacenter-1,Datacenter:datacenter-2' for multiple regions)
+
+    create_zone = Should vRA create a Cloud Zone for each region (default is true)
     """
     api_url_base = set_bas_url(url)
     access_key = get_token(url,username, password)
     headers = {'Content-Type': 'application/json','Authorization': 'Bearer {0}'.format(access_key)}
     api_url = '{0}iaas/api/cloud-accounts-vsphere'.format(api_url_base)
+    region_array = region_name.split(',')
     data = {
               "name": name,
               "hostName": vc_hostname,
@@ -207,10 +224,8 @@ def create_vsphere_ca(url,username,password,vc_hostname,vc_username,vc_password,
               "dcid": "onprem",
               "username": vc_username,
               "password": vc_password,
-              "regionIds": [
-                region_id
-              ],
-              "createDefaultZones": "true"
+              "regionIds": region_array,
+              "createDefaultZones": create_zone
             }
     response = requests.post(api_url, headers=headers, data=json.dumps(data), verify=False)
     if response.status_code == 201:
@@ -219,9 +234,10 @@ def create_vsphere_ca(url,username,password,vc_hostname,vc_username,vc_password,
         return json_data
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
-def get_ca_by_name(url,username,password,vc_ca_name):
+def get_ca_by_name(url,username,password,caname):
     """
     Retrieve Cloud Account by its names for further configurations
 
@@ -233,12 +249,12 @@ def get_ca_by_name(url,username,password,vc_ca_name):
 
     password = vRA Admin password
 
-    vc_ca_name = Cloud Account Name
+    ca_name = Cloud Account Name
     """
     api_url_base = set_bas_url(url)
     access_key = get_token(url,username, password)
     headers = {'Content-Type': 'application/json','Authorization': 'Bearer {0}'.format(access_key)}
-    api_url = '{0}iaas/api/cloud-accounts'.format(api_url_base,vc_ca_name)
+    api_url = '{0}iaas/api/cloud-accounts'.format(api_url_base)
     response = requests.get(api_url, headers=headers, verify=False)
     if response.status_code == 200:
         json_data = json.loads(response.content.decode('utf-8'))
@@ -247,22 +263,23 @@ def get_ca_by_name(url,username,password,vc_ca_name):
         end_n = end_n - 1
         while True:
             ca_name = json_data['content'][n]['name']
-            if ca_name == vc_ca_name:
-                print("Found Cloud Account: " + vc_ca_name)
+            if ca_name == caname:
+                print("Found Cloud Account: " + caname)
                 ca_json = json_data['content'][n]
                 return ca_json
                 break
             elif n < end_n:
                 n = n + 1
             elif n >= end_n:
-                print("No Match Found For Cloud Zone: " + vc_ca_name)
-                return "No Match Found For Cloud Zone: " + vc_ca_name
+                print("No Match Found For Cloud Zone: " + caname)
+                return "No Match Found For Cloud Zone: " + caname
                 break
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
-def create_nsxt_ca(url,username,password,nsx_hostname,nsx_username,nsx_password,name,vc_ca_name):
+def create_nsxt_ca(url,username,password,nsx_hostname,nsx_username,nsx_password,name,ca_name):
     """
     Create NSX Cloud Account
 
@@ -282,12 +299,12 @@ def create_nsxt_ca(url,username,password,nsx_hostname,nsx_username,nsx_password,
 
     name = Provide a name for the Cloud Account
 
-    vc_ca_name = Name of Cloud Account to associate with NSX Cloud Account
+    ca_name = Name of Cloud Account to associate with NSX Cloud Account
     """
     api_url_base = set_bas_url(url)
     access_key = get_token(url,username, password)
     headers = {'Content-Type': 'application/json','Authorization': 'Bearer {0}'.format(access_key)}
-    ca_json = get_ca_by_name(url,username,password,vc_ca_name)
+    ca_json = get_ca_by_name(url,username,password,ca_name)
     ca_id = ca_json['id']
     ca_array = []
     ca_array.append(ca_id)
@@ -310,7 +327,8 @@ def create_nsxt_ca(url,username,password,nsx_hostname,nsx_username,nsx_password,
         return json_data
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def get_czid_by_name(url,username,password,czname):
     """
@@ -351,6 +369,114 @@ def get_czid_by_name(url,username,password,czname):
                 break
     else:
         print(response.status_code)
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
+
+def get_region_by_caname(url,username,password,region_name,caname):
+    """
+    Retrieve Region ID that is=assocaited to a specific Cloud Account
+
+    Arguments:
+
+    url = vRA FQDN
+
+    username = vRA admin user
+
+    password = vRA Admin password
+
+    region_name = region_name = Region inside of vRA (e.g. - us-west-1, Datacenter:datacenter-2)
+
+    czaname = Cloud Account Name
+    """
+    api_url_base = set_bas_url(url)
+    access_key = get_token(url,username, password)
+    headers = {'Content-Type': 'application/json','Authorization': 'Bearer {0}'.format(access_key)}
+    api_url = '{0}iaas/api/regions'.format(api_url_base)
+    response = requests.get(api_url, headers=headers, verify=False)
+    ca_json = get_ca_by_name(url,username,password,caname)
+    ca_id = ca_json['id']
+    if response.status_code == 200:
+        json_data = json.loads(response.content.decode('utf-8'))
+        n = 0
+        end_n = json_data['totalElements']
+        end_n = end_n - 1
+        while True:
+            reg_name = json_data['content'][n]['name']
+            if reg_name == region_name:
+                print("Found Region: " + region_name)
+                caid = json_data['content'][n]['_links']['cloud-account']['href']
+                caid = caid[25:]
+                if caid == ca_id:
+                    reg_id = json_data['content'][n]['id']
+                    return reg_id
+                    break
+                elif n < end_n:
+                    n = n + 1
+            elif n < end_n:
+                n = n + 1
+            elif n >= end_n:
+                print("No Match Found For Region: " + region_name)
+                return "No Match Found For Region: " + region_name
+                break
+    else:
+        print(response.status_code)
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
+
+def create_cloudzone(url,username,password,czname,region_name,caname,folder=None,ppolicy="DEFAULT"):
+    """
+    Create Cloud Zone
+
+    Arguments:
+
+    url = vRA FQDN
+
+    username = vRA Admin
+
+    password = vRA Admin Password
+
+    czname = Provide a name for the Cloud Zone
+
+    region_name = Region inside of vRA (e.g. - us-west-1, Datacenter:datacenter-2)
+
+    caname = Cloud Zone Name
+
+    ppolicy = Placement Policy. Options are DEFAULT, BINPACK, SPREAD (DEFAULT is the default)
+
+    folder = vSphere Folder Name (i.e. dev_vms)
+    """
+    api_url_base = set_bas_url(url)
+    access_key = get_token(url,username, password)
+    reg_id = get_cloud_regionid_by_name(url,username,password,region_name)
+    headers = {'Content-Type': 'application/json','Authorization': 'Bearer {0}'.format(access_key)}
+    api_url = '{0}iaas/api/zones'.format(api_url_base)
+    if folder != None:
+        data =  {
+                    "name": czname,
+                    "desc": czname + " Cloud Zone",
+                    "regionId": reg_id,
+                    "placementPolicy": ppolicy,
+                    "advancedPlacementPolicyFailureToggle":"false",
+                    "customProperties":{
+                              "resourceGroupName": folder
+                    }
+                }
+    else:
+        data =  {
+                    "name": czname,
+                    "desc": czname + " Cloud Zone",
+                    "regionId": reg_id,
+                    "placementPolicy": ppolicy,
+                    "advancedPlacementPolicyFailureToggle":"false",
+                }
+    response = requests.post(api_url, headers=headers, data=json.dumps(data), verify=False)
+    if response.status_code == 201:
+        json_data = json.loads(response.content.decode('utf-8'))
+        print('Successfully Created Cloud Zone')
+        return json_data['id']
+    else:
+        print(response.status_code)
+        print(response.text)
         return response.status_code
 
 def tag_cloudzone(url,username,password,czname,tag_key,tag_value):
@@ -392,7 +518,8 @@ def tag_cloudzone(url,username,password,czname,tag_key,tag_value):
         return json_data
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def delete_cloudzone(url,username,password,czname):
     """
@@ -447,7 +574,8 @@ def delete_cloudaccount(url,username,password,ca_name):
         return 'Successfully Deleted Cloud Account: ' + czname
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 ######Projects######
 def create_project(url,username,password,name):
@@ -483,7 +611,8 @@ def create_project(url,username,password,name):
         return json_data['id']
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def get_proj_by_name(url,username,password,projname):
     """
@@ -523,7 +652,8 @@ def get_proj_by_name(url,username,password,projname):
                 break
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def add_member_to_project(url,username,password,projname,member_email):
     """
@@ -573,7 +703,8 @@ def add_member_to_project(url,username,password,projname,member_email):
         return json_data
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def add_admin_to_project(url,username,password,projname,admin_email):
     """
@@ -623,7 +754,8 @@ def add_admin_to_project(url,username,password,projname,admin_email):
         return json_data
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def add_group_member_to_project(url,username,password,projname,group_email):
     """
@@ -673,7 +805,8 @@ def add_group_member_to_project(url,username,password,projname,group_email):
         return json_data
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def add_group_admin_to_project(url,username,password,projname,group_email):
     """
@@ -726,7 +859,8 @@ def add_group_admin_to_project(url,username,password,projname,group_email):
         return json_data
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def add_cloudzone_to_project(url,username,password,projname,czname,priority=None,store_limit=None,cpu_limit=None,mem_limit=None,max_num=None):
     """
@@ -800,7 +934,8 @@ def add_cloudzone_to_project(url,username,password,projname,czname,priority=None
         return json_data
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def enable_tf_on_project(url,username,password,projname):
     """
@@ -834,7 +969,8 @@ def enable_tf_on_project(url,username,password,projname):
         return json_data
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def disable_tf_on_project(url,username,password,projname):
     """
@@ -867,7 +1003,8 @@ def disable_tf_on_project(url,username,password,projname):
         return json_data
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def remove_all_cz_from_project(url,username,password,projname):
     """
@@ -899,7 +1036,8 @@ def remove_all_cz_from_project(url,username,password,projname):
         return json_data
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def delete_project(url,username,password,projname):
     """
@@ -927,7 +1065,8 @@ def delete_project(url,username,password,projname):
         return 'Successfully Deleted Project: ' + projname
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 ######Flavor Mappings######
 def get_cloud_regionid_by_name(url,username,password,region_name):
@@ -970,7 +1109,8 @@ def get_cloud_regionid_by_name(url,username,password,region_name):
                 break
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def create_cloud_flavor(url,username,password,flavor_name,mapping_name,cloud_instance_name,region_name):
     """
@@ -1015,7 +1155,8 @@ def create_cloud_flavor(url,username,password,flavor_name,mapping_name,cloud_ins
         return json_data
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def get_flavor_by_name(url,username,password,flavor_name):
     """
@@ -1055,7 +1196,8 @@ def get_flavor_by_name(url,username,password,flavor_name):
                 break
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def update_cloud_flavor(url,username,password,flavor_name,mapping_name,cloud_instance_name):
     """
@@ -1097,7 +1239,8 @@ def update_cloud_flavor(url,username,password,flavor_name,mapping_name,cloud_ins
         return json_data
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def create_vsphere_flavor(url,username,password,flavor_name,mapping_name,cpu_count,mem_count,region_name):
     """
@@ -1144,7 +1287,8 @@ def create_vsphere_flavor(url,username,password,flavor_name,mapping_name,cpu_cou
         return json_data
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def update_vsphere_flavor(url,username,password,flavor_name,mapping_name,cpu_count,mem_count):
     """
@@ -1188,7 +1332,8 @@ def update_vsphere_flavor(url,username,password,flavor_name,mapping_name,cpu_cou
         return json_data
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def delete_flavor_mapping(url,username,password,flavor_name):
     """
@@ -1216,7 +1361,8 @@ def delete_flavor_mapping(url,username,password,flavor_name):
         return 'Successfully Deleted Flavor Mapping: ' + flavor_name
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 ######Image Mappings######
 def create_image_mapping(url,username,password,profile_name,image_name,image_id,region_name):
@@ -1262,7 +1408,8 @@ def create_image_mapping(url,username,password,profile_name,image_name,image_id,
         return json_data
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def get_image_profile_by_name(url,username,password,profile_name):
     """
@@ -1302,7 +1449,8 @@ def get_image_profile_by_name(url,username,password,profile_name):
                 break
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def update_image_mapping(url,username,password,profile_name,image_name,image_id):
     """
@@ -1344,7 +1492,8 @@ def update_image_mapping(url,username,password,profile_name,image_name,image_id)
         return json_data
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def delete_image_mapping(url,username,password,profile_name):
     """
@@ -1372,7 +1521,8 @@ def delete_image_mapping(url,username,password,profile_name):
         return 'Successfully Deleted Flavor Mapping: ' + profile_name
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 ######Network Profiles######
 def create_network_profile(url,username,password,region_name,net_profile_name):
@@ -1412,7 +1562,8 @@ def create_network_profile(url,username,password,region_name,net_profile_name):
         return json_data
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def get_netprofile_by_name(url,username,password,net_profile_name):
     """
@@ -1452,7 +1603,8 @@ def get_netprofile_by_name(url,username,password,net_profile_name):
                 break
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def get_fabric_network_by_name(url,username,password,fabric_net_name):
     """
@@ -1492,7 +1644,8 @@ def get_fabric_network_by_name(url,username,password,fabric_net_name):
                 break
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def add_network_to_profile(url,username,password,region_name,net_profile_name,fabric_net_name):
     """
@@ -1540,7 +1693,8 @@ def add_network_to_profile(url,username,password,region_name,net_profile_name,fa
         return json_data
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def get_cloud_acct_type(url,username,password,caid):
     """
@@ -1566,7 +1720,9 @@ def get_cloud_acct_type(url,username,password,caid):
         ca_type = extract_values(json_data,'cloudAccountType')
         return ca_type
     else:
-        return response.status_code
+        print(response.status_code)
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def get_nsxt_fabric_network_by_name(url,username,password,fabric_net_name):
     """
@@ -1615,7 +1771,8 @@ def get_nsxt_fabric_network_by_name(url,username,password,fabric_net_name):
                 break
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def add_nsxt_network_to_profile(url,username,password,region_name,net_profile_name,fabric_net_name):
     """
@@ -1663,7 +1820,8 @@ def add_nsxt_network_to_profile(url,username,password,region_name,net_profile_na
         return json_data
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def tag_fabric_network(url,username,password,fabric_net_name,tag_key,tag_value):
     """
@@ -1709,7 +1867,8 @@ def tag_fabric_network(url,username,password,fabric_net_name,tag_key,tag_value):
         return json_data
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def config_ondemand_sec_groups_vsphere_network_profile(url,username,password,net_profile_name,edge_router_name,t0_router_name):
     """
@@ -1753,7 +1912,8 @@ def config_ondemand_sec_groups_vsphere_network_profile(url,username,password,net
         return json_data
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def get_sec_group_by_name(url,username,password,secgroup_name):
     """
@@ -1793,7 +1953,8 @@ def get_sec_group_by_name(url,username,password,secgroup_name):
                 break
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def add_sec_group_vsphere_net_profile(url,username,password,net_profile_name,secgroup_name):
     """
@@ -1840,7 +2001,8 @@ def add_sec_group_vsphere_net_profile(url,username,password,net_profile_name,sec
         return json_data
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def delete_netprofile(url,username,password,net_profile_name):
     """
@@ -1868,7 +2030,8 @@ def delete_netprofile(url,username,password,net_profile_name):
         return 'Successfully Deleted Network profile: ' + net_profile_name
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 ######Storage Profiles######
 def get_vsphere_datastore_by_name(url,username,password,datastore_name):
@@ -1909,7 +2072,8 @@ def get_vsphere_datastore_by_name(url,username,password,datastore_name):
                 break
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def get_storage_policy_id_by_name(url,username,password,policy_name):
     """
@@ -1950,7 +2114,8 @@ def get_storage_policy_id_by_name(url,username,password,policy_name):
                 break
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def get_storage_profile_by_name(url,username,password,storage_profile_name):
     """
@@ -1990,7 +2155,8 @@ def get_storage_profile_by_name(url,username,password,storage_profile_name):
                 break
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def create_vsphere_storage_profile(url,username,password,name,region_name,datastore_name,encrypted="false",sharelevel="normal",diskmode="independent-persistent",tag_key=None,iops_limit=None,tag_value=None,shares="1000",provision_type="thin",default="false",disktype="standard",policy_name=None):
     """
@@ -2087,7 +2253,8 @@ def create_vsphere_storage_profile(url,username,password,name,region_name,datast
         return json_data
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def create_aws_storage_profile(url,username,password,name,region_name,encrypted="false",devicetype="ebs",volumetype="standard",tag_key=None,iops_limit=None,tag_value=None,default="false"):
     """
@@ -2158,7 +2325,8 @@ def create_aws_storage_profile(url,username,password,name,region_name,encrypted=
         return json_data
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def create_azure_storage_profile(url,username,password,name,region_name,encrypted="false",disktype="Standard_LRS",diskcaching="None",oscaching="None",tag_key=None,tag_value=None,default="false"):
     """
@@ -2220,7 +2388,8 @@ def create_azure_storage_profile(url,username,password,name,region_name,encrypte
         return json_data
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 ######Integrations######
 def create_actions_content_source(url,username,password,name,int_name,proj_name,repo,branch,path):
@@ -2274,7 +2443,8 @@ def create_actions_content_source(url,username,password,name,int_name,proj_name,
         return 'Successfully Created Actions Content Source'
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def create_blueprint_content_source(url,username,password,name,int_name,proj_name,repo,branch,path):
     """
@@ -2326,7 +2496,8 @@ def create_blueprint_content_source(url,username,password,name,int_name,proj_nam
         return 'Successfully Created Blueprint Content Source'
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def delete_storage_profile(url,username,password,storage_profile_name):
     """
@@ -2354,7 +2525,8 @@ def delete_storage_profile(url,username,password,storage_profile_name):
         return 'Successfully Deleted Storage Profile: ' + storage_profile_name
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 ######Blueprint Version and Release######
 def get_template_by_name(url,username,password,template_name):
@@ -2395,7 +2567,8 @@ def get_template_by_name(url,username,password,template_name):
                 break
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def create_template_version(url,username,password,template_name,version,release="false",change_log=None):
     """
@@ -2437,7 +2610,8 @@ def create_template_version(url,username,password,template_name,version,release=
         return 'Successfully Created Version of Cloud Template'
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def release_template_version(url,username,password,template_name,version):
     """
@@ -2467,7 +2641,8 @@ def release_template_version(url,username,password,template_name,version):
         return 'Successfully Released Version of Cloud Template to Catalog'
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def delete_template(url,username,password,template_name):
     """
@@ -2495,7 +2670,8 @@ def delete_template(url,username,password,template_name):
         return 'Successfully Deleted Cloud Template: ' + template_name
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 ##########Service Broker##########
 def create_sb_content_source(url,username,password,name,proj_name,content_type):
@@ -2543,7 +2719,8 @@ def create_sb_content_source(url,username,password,name,proj_name,content_type):
         return 'Successfully Created Actions Content Source: ' + name
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def get_sb_content_source_by_name(url,username,password,content_source_name):
     """
@@ -2583,7 +2760,8 @@ def get_sb_content_source_by_name(url,username,password,content_source_name):
                 break
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def create_sb_content_source(url,username,password,proj_name,content_source_name):
     """
@@ -2623,7 +2801,8 @@ def create_sb_content_source(url,username,password,proj_name,content_source_name
         return 'Successfully Entitled Content Source: ' + content_source_name
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def delete_sb_content_source(url,username,password,content_source_name):
     """
@@ -2651,6 +2830,439 @@ def delete_sb_content_source(url,username,password,content_source_name):
         return 'Successfully Deleted Service Broker Content Source: ' + content_source_name
     else:
         print(response.status_code)
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
+
+def get_polid_by_name(url,username,password,polname):
+    """
+    Retrieve Policy ID by name For Further Configurations
+
+    Arguments:
+
+    url = vRA FQDN
+
+    username = vRA Admin User
+
+    password = vRA Admin Password
+
+    polname = Policy Name
+    """
+    api_url_base = set_bas_url(url)
+    access_key = get_token(url,username, password)
+    headers = {'Content-Type': 'application/json','Authorization': 'Bearer {0}'.format(access_key)}
+    api_url = '{0}policy/api/policies'.format(api_url_base)
+    response = requests.get(api_url, headers=headers, verify=False)
+    if response.status_code == 200:
+        json_data = json.loads(response.content.decode('utf-8'))
+        n = 0
+        end_n = json_data['totalElements']
+        end_n = end_n - 1
+        while True:
+            pol_name = json_data['content'][n]['name']
+            if pol_name == polname:
+                print("Found Policy " + polname)
+                pl_id = json_data['content'][n]['id']
+                return pl_id
+                break
+            elif n < end_n:
+                n = n + 1
+            elif n >= end_n:
+                print("No match found for policy: " + polname)
+                return "No match found for policy: " + polname
+                break
+    else:
+        print(response.status_code)
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
+
+def delete_policy(url,username,password,polname):
+    """
+    Delete Policy
+
+    Arguments:
+
+    url = vRA FQDN
+
+    username = vRA admin user
+
+    password = vRA Admin password
+
+    polname = Policy Name
+    """
+    api_url_base = set_bas_url(url)
+    access_key = get_token(url,username,password,czname)
+    pz_id = get_polid_by_name(url,username,password,polname)
+    headers = {'Content-Type': 'application/json','Authorization': 'Bearer {0}'.format(access_key)}
+    api_url = '{0}policy/api/policies/{1}'.format(api_url_base,pz_id)
+    response = requests.delete(api_url, headers=headers, verify=False)
+    if response.status_code == 204:
+        print("Successfully Deleted Policy: " + polname)
+        return "Successfully Deleted Policy: " + polname
+    else:
+        print(response.status_code)
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
+
+def get_catalog_item_by_name(url,username,password,item_name):
+    """
+    Retrieve a catalog item by name and return information via json
+
+    Arguments:
+
+    url = vRA FQDN
+
+    username = vRA Admin User
+
+    password = vRA Admin Password
+
+    item_name = Catalog Item Name
+    """
+    api_url_base = set_bas_url(url)
+    access_key = get_token(url,username, password)
+    headers = {'Content-Type': 'application/json','Authorization': 'Bearer {0}'.format(access_key)}
+    api_url = '{0}catalog/api/items'.format(api_url_base)
+    response = requests.get(api_url, headers=headers, verify=False)
+    if response.status_code == 200:
+        json_data = json.loads(response.content.decode('utf-8'))
+        n = 0
+        end_n = json_data['numberOfElements']
+        end_n = end_n - 1
+        while True:
+            cat_name = json_data['content'][n]['name']
+            if cat_name == item_name:
+                print("Found Catalog Item " + item_name)
+                cat_id = json_data['content'][n]
+                return cat_id
+                break
+            elif n < end_n:
+                n = n + 1
+            elif n >= end_n:
+                print("No match found for Catalog Item : " + item_name)
+                return "No match found for Catalog Item : " + item_name
+                break
+    else:
+        print(response.status_code)
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
+
+def request_catalog_item(url,username,password,proj_name,item_name,deployment_name,input_json,reason=None,version=None):
+    """
+    Request a catalog item for deployment
+
+    Arguments:
+
+    url = vRA FQDN
+
+    username = vRA Admin user
+
+    password = vRA Admin password
+
+    proj_name = vRA Project name
+
+    item_name = Name of the Catalog item to request
+
+    deployment_name = The name you want to provide for the deployment
+
+    input_json = Inpus for the catalog request in json format (i.e. {"machine_name": "machine1","image": "ubuntu"})
+
+    reason = Reason for the deployment (This is not required)
+    """
+    api_url_base = set_bas_url(url)
+    access_key = get_token(url,username, password)
+    headers = {'Content-Type': 'application/json','Authorization': 'Bearer {0}'.format(access_key)}
+    proj_json = get_proj_by_name(url,username,password,proj_name)
+    proj_id = proj_json['id']
+    item_json = get_catalog_item_by_name(url,username,password,item_name)
+    item_id = item_json['id']
+    if version == None:
+        version = ""
+    if reason == None:
+        reason = ""
+    api_url = '{0}catalog/api/items/{1}/request'.format(api_url_base,item_id)
+    data =  {
+              "bulkRequestCount": 1,
+              "deploymentName": deployment_name,
+              "inputs": input_json,
+              "projectId": proj_id,
+              "reason": reason,
+              "version": version
+            }
+    response = requests.post(api_url, headers=headers, data=json.dumps(data), verify=False)
+    if response.status_code == 200:
+        print('Successfully Deployed Catalog Item: ' + item_name + ' with deployment name ' + deployment_name)
+        return 'Successfully Deployed Catalog Item: ' + item_name + ' with deployment name ' + deployment_name
+    else:
+        print(response.status_code)
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
+
+def get_deployment_by_name(url,username,password,dep_name):
+    """
+    Retrieve an existing deployment by name and return information via json
+
+    Arguments:
+
+    url = vRA FQDN
+
+    username = vRA Admin User
+
+    password = vRA Admin Password
+
+    dep_name = Name of the Deployment
+    """
+    api_url_base = set_bas_url(url)
+    access_key = get_token(url,username, password)
+    headers = {'Content-Type': 'application/json','Authorization': 'Bearer {0}'.format(access_key)}
+    api_url = '{0}deployment/api/deployments'.format(api_url_base)
+    response = requests.get(api_url, headers=headers, verify=False)
+    if response.status_code == 200:
+        json_data = json.loads(response.content.decode('utf-8'))
+        n = 0
+        end_n = json_data['numberOfElements']
+        end_n = end_n - 1
+        while True:
+            dp_name = json_data['content'][n]['name']
+            if dp_name == dep_name:
+                print("Found Catalog Item " + dep_name)
+                dp_id = json_data['content'][n]
+                return dp_id
+                break
+            elif n < end_n:
+                n = n + 1
+            elif n >= end_n:
+                print("No match found for Deployment : " + dep_name)
+                return "No match found for zdeployment : " + dep_name
+                break
+    else:
+        print(response.status_code)
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
+
+def delete_deployment(url,username,password,dep_name):
+    """
+    Deletes an existing deployment
+
+    Arguments:
+
+    url = vRA FQDN
+
+    username = vRA Admin User
+
+    password = vRA Admin Password
+
+    dep_name = Name of the Deployment
+    """
+    api_url_base = set_bas_url(url)
+    access_key = get_token(url,username, password)
+    dep_json = get_deployment_by_name(url,username,password,dep_name)
+    dep_id = dep_json['id']
+    headers = {'Content-Type': 'application/json','Authorization': 'Bearer {0}'.format(access_key)}
+    api_url = '{0}deployment/api/deployments/{1}'.format(api_url_base,dep_id)
+    response = requests.delete(api_url, headers=headers, verify=False)
+    if response.status_code == 200:
+        print('Successfully Deleted Deployment: ' + dep_name)
+        return 'Successfully Deleted Deployment: ' + dep_name
+    else:
+        print(response.status_code)
+        return response.status_code
+
+def create_lease_policy(url,username,password,polname,projname,enftype,operator,item_name,leasegrace=15,leaseterm=30,leasemax=90):
+    """
+    Create Service Broker Lease Policy
+
+    Arguments:
+
+    url = vRA FQDN
+
+    username = vRA Admin
+
+    password = vRA Admin Password
+
+    pol_name = Policy Name
+
+    pol_type = Policy Type
+
+    projname = Project Name to tie to Policy
+
+    enftype = Default "HARD, can be "SOFT"
+
+    operator: "eq" or "not eq" (equals or not equals)
+
+    item_name: Catalog Item Name to apply criteria too
+
+    leasegrace: Lease Grace Period (default = 15 days)
+
+    leaseterm: Lease Term Period (default = 30 days)
+
+    leasemax: Max Lease Period (default = 90 days)
+    """
+    api_url_base = set_bas_url(url)
+    access_key = get_token(url, username, password)
+    headers = {'Content-Type': 'application/json','Authorization': 'Bearer {0}'.format(access_key)}
+    proj_json = get_proj_by_name(url,username,password,projname)
+    proj_id = proj_json['id']
+    catitem_json = get_catalog_item_by_name(url,username,password,item_name)
+    catitem_id = catitem_json['id']
+    api_url = '{0}policy/api/policies/'.format(api_url_base)
+    data = {
+            "name": polname,
+            "projectId": proj_id,
+            "definition":{
+                "leaseGrace": leasegrace,
+                "leaseTermMax": leaseterm,
+                "leaseTotalTermMax": leasemax
+            },
+            "enforcementType": enftype,
+            "typeId":"com.vmware.policy.deployment.lease",
+            "criteria":{
+                "matchExpression":{
+                    "key":"catalogItemId",
+                    "operator": operator,
+                    "value": catitem_id
+                }
+            }
+        }
+    response = requests.post(api_url, headers=headers, data=json.dumps(data), verify=False)
+    if response.status_code == 200:
+        json_data = json.loads(response.content.decode('utf-8'))
+        print("Successfully Created Lease Policy")
+        return None
+    else:
+        print(response.status_code)
+        return response.status_code
+
+def create_approval_policy(url,username,password,polname,projname,enftype,operator,item_name,level=1,expiry=5):
+    """
+    Create Service Broker Approval Policy
+
+    Arguments:
+
+    url = vRA FQDN
+
+    username = vRA Admin
+
+    password = vRA Admin Password
+
+    pol_name = Policy Name
+
+    pol_type = Policy Type
+
+    projname = Project Name to tie to Policy
+
+    enftype = Default "HARD, can be "SOFT"
+
+    key = evaluator, (e.g. - eq, notEq, hasAny) refer to vRA Documentation for more options
+
+    value = The object or value that you want to filter the criteria by (e.g. - Cloud Template Name, user, Cloud Account etc.)see vRA Documentation
+    """
+    api_url_base = set_bas_url(url)
+    access_key = get_token(url, username, password)
+    headers = {'Content-Type': 'application/json','Authorization': 'Bearer {0}'.format(access_key)}
+    proj_json = get_proj_by_name(url,username,password,projname)
+    proj_id = proj_json['id']
+    catitem_json = get_catalog_item_by_name(url,username,password,item_name)
+    catitem_id = catitem_json['id']
+    api_url = '{0}policy/api/policies/'.format(api_url_base)
+    data = {
+              "name": polname,
+              "projectId": proj_id,
+              "definition": {
+                "level": level,
+                "approvalMode": "ANY_OF",
+                "autoApprovalDecision": "APPROVE",
+                "approvers": [
+                  "USER:configuser"
+                ],
+                "autoApprovalExpiry": expiry,
+                "actions": [
+                  "Deployment.Create"
+                ]
+              },
+              "enforcementType": enftype,
+              "typeId": "com.vmware.policy.approval",
+              "criteria": {
+                "matchExpression": {
+                  "key": "catalogItemId",
+                  "operator": operator,
+                  "value": catitem_id
+                }
+              }
+            }
+    response = requests.post(api_url, headers=headers, data=json.dumps(data), verify=False)
+    if response.status_code == 200:
+        json_data = json.loads(response.content.decode('utf-8'))
+        print("Successfully Created Approval Policy")
+        return None
+    else:
+        print(response.status_code)
+        print(response.text)
+        return response.status_code
+
+def create_action_policy(url,username,password,polname,projname,enftype,operator,action,item_name):
+    """
+    Create Service Broker Day 2 Action
+
+    Arguments:
+
+    url = vRA FQDN
+
+    username = vRA Admin
+
+    password = vRA Admin Password
+
+    pol_name = Policy Name
+
+    projname = Project Name to tie to Policy
+
+    enftype = Default "HARD, can be "SOFT"
+
+    operator = "eq" or "not eq" (equals or does not equal)
+
+    action = Day 2 Action, e.g. "Deployment.Delete" see vRA Documentation for various Day 2 Actions
+
+    item_name = catalog item that you want to apply policy to
+    """
+    api_url_base = set_bas_url(url)
+    access_key = get_token(url, username, password)
+    headers = {'Content-Type': 'application/json','Authorization': 'Bearer {0}'.format(access_key)}
+    proj_json = get_proj_by_name(url,username,password,projname)
+    proj_id = proj_json['id']
+    catitem_json = get_catalog_item_by_name(url,username,password,item_name)
+    catitem_id = catitem_json['id']
+    api_url = '{0}policy/api/policies'.format(api_url_base)
+    data =  {
+                "name": polname,
+                "projectId": proj_id,
+                "definition":{
+                    "allowedActions":[
+                        {
+                            "authorities":[
+                                "ROLE:administrator"
+                            ],
+                            "actions":[
+                                action
+                            ]
+                        }
+                    ]
+                },
+                "enforcementType": enftype,
+                "typeId":"com.vmware.policy.deployment.action",
+                "criteria":{
+                    "matchExpression":{
+                        "key":"catalogItemId",
+                        "operator": operator,
+                        "value": catitem_id
+                    }
+                }
+            }
+    response = requests.post(api_url, headers=headers, data=json.dumps(data), verify=False)
+    if response.status_code == 200:
+        json_data = json.loads(response.content.decode('utf-8'))
+        print("Successfully Created Action Policy")
+        return None
+    else:
+        print(response.status_code)
+        print(response.text)
         return response.status_code
 
 ######Code Stream######
@@ -2693,7 +3305,8 @@ def create_cs_variable(url,username,password,name,proj_name,type,value,descripti
         return 'Successfully Created Code Stream Variable'
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def get_variable_by_name(url,username,password,variable_name):
     """
@@ -2727,7 +3340,8 @@ def get_variable_by_name(url,username,password,variable_name):
                 print("Variable " + variable_name + " not found!")
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def delete_variable(url,username,password,variable_name):
     """
@@ -2753,7 +3367,8 @@ def delete_variable(url,username,password,variable_name):
         return 'Successfully Deleted Code Stream Variable: ' + variable_name
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 ##########Functions Using NON-PUBLIC API Calls##########
 def get_nsxt_router_link_by_name(url,username,password,router_name):
@@ -2792,7 +3407,8 @@ def get_nsxt_router_link_by_name(url,username,password,router_name):
                 return ("Inner Rest call for get_nsxt_router_link_by_name failed with error: " + response.status_code)
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def create_github_saas_integration(url,username,password,name,private_key):
     """
@@ -2832,7 +3448,8 @@ def create_github_saas_integration(url,username,password,name,private_key):
         return json_data
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def get_integration_by_name(url,username,password,int_name):
     """
@@ -2871,7 +3488,8 @@ def get_integration_by_name(url,username,password,int_name):
                 return ("Inner Rest call for get_nsxt_router_link_by_name failed with error: " + response.status_code)
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def create_ansible_oss_integration(url,username,password,name,private_key,private_id,hostname,inventory_path,use_sudo="true",ssh_port="22"):
     """
@@ -2928,21 +3546,27 @@ def create_ansible_oss_integration(url,username,password,name,private_key,privat
         print('Successfully Created Ansible OSS Integration')
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def create_ansibletower_integration(url,username,password,name,private_key,private_id,hostname,use_sudo="true",ssh_port="22"):
     """
     Creates an Ansible Open Source integration in Cloud Assembly
 
-    create_ansibletower_integration(url,username,password,name,private_key,private_id,hostname)
-
     Arguments:
+
     url = vRA FQDN
+
     username = vRA Admin user
+
     password = vRA Admin password
+
     name = Name of the Ansible OSS integration
+
     private_key = Password used for integration
+
     private_id = Username used for integration
+
     hostname = FQDN or IP of Ansible Server
     """
     api_url_base = set_bas_url(url)
@@ -2971,7 +3595,8 @@ def create_ansibletower_integration(url,username,password,name,private_key,priva
         print('Successfully Created Ansible Tower Integration')
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
 def delete_integration_by_name(url,username,password,int_name):
     """
@@ -2998,5 +3623,9 @@ def delete_integration_by_name(url,username,password,int_name):
         return 'Successfully Deleted Integration in Cloud Assembly: ' + content_source_name
     else:
         print(response.status_code)
-        return response.status_code
+        json_data = json.loads(response.content.decode('utf-8'))
+        return json_data
 
+#url = "vra8-dev-ga.cmbu.local"
+#username = "configuser"
+#password = "VMware1!"
