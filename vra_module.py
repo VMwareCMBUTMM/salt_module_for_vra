@@ -82,7 +82,7 @@ def get_token(url,username,password):
     response = requests.post(api_url, headers=headers, data=json.dumps(data), verify=False)
     if response.status_code == 200:
         json_data = json.loads(response.content.decode('utf-8'))
-        key = json_data['access_token']
+        key = json_data['cspAuthToken']
         return key
     else:
         return response.status_code
