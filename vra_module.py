@@ -74,7 +74,7 @@ def get_token(url,username,password):
     """
     api_url_base = set_bas_url(url)
     headers = {'Content-Type': 'application/json'}
-    api_url = '{0}csp/gateway/am/api/login?access_token'.format(api_url_base)
+    api_url = '{0}csp/gateway/am/api/login'.format(api_url_base)
     data =  {
               "username": username,
               "password": password
