@@ -74,7 +74,7 @@ def get_token(url,username,password):
     """
     api_url_base = set_bas_url(url)
     headers = {'Content-Type': 'application/json'}
-    api_url = '{0}csp/gateway/am/api/login?access_token'.format(api_url_base)
+    api_url = '{0}csp/gateway/am/api/login'.format(api_url_base)
     data =  {
               "username": username,
               "password": password
@@ -82,7 +82,7 @@ def get_token(url,username,password):
     response = requests.post(api_url, headers=headers, data=json.dumps(data), verify=False)
     if response.status_code == 200:
         json_data = json.loads(response.content.decode('utf-8'))
-        key = json_data['access_token']
+        key = json_data['cspAuthToken']
         return key
     else:
         return response.status_code
